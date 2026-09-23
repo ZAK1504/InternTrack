@@ -48,10 +48,10 @@ const ApplicationForm = ({ jobId, onClose, onSuccess }) => {
         
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Resume (PDF only)</label>
+            <label className="block text-gray-700 mb-2">Resume (PDF, DOCX, TXT)</label>
             <input 
               type="file" 
-              accept=".pdf"
+              accept=".pdf,.docx,.txt"
               className="input-field p-1" 
               onChange={(e) => setFile(e.target.files[0])}
               required

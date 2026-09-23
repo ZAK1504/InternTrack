@@ -12,12 +12,18 @@ const storage = multer.diskStorage({
   }
 });
 
-// File filter (accept only PDF)
+// File filter (accept PDF, DOCX, TXT)
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype === 'application/pdf') {
+  const allowedMimeTypes = [
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/plain'
+  ];
+  
+  if (allowedMimeTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Only PDF files are allowed'), false);
+    cb(new Error('Only PDF, DOCX, and TXT files are allowed'), false);
   }
 };
 

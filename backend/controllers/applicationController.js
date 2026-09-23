@@ -3,11 +3,35 @@ const Job = require('../models/Job');
 const fs = require('fs');
 const path = require('path');
 const { execFile } = require('child_process');
+const mammoth = require('mammoth');
 const { scoreApplication } = require('../services/aiScoring');
 
-// Extract text from a PDF using pdf-parse CLI (ships with the package),
-// with a raw byte regex fallback
-function extractTextFromPDF(filePath) {
+// Extract text from a file (PDF via pdf-parse CLI, DOCX via mammoth, TXT via fs)
+async function extractTextFromFile(filePath) {
+  try {
+    const ext = path.extname(filePath).toLowerCase();
+
+    // 1. TXT Parsing
+    if (ext === '.txt') {
+      const text = fs.readFileSync(filePath, 'utf-8');
+      console.log(`TXT extracted ${text.length} chars`);
+      return text;
+    }
+
+    // 2. DOCX Parsing
+    if (ext === '.docx') {
+      const result = await mammoth.extractRawText({ path: filePath });
+      const text = result.value;
+      if (text && text.length > 20) {
+        console.log(`DOCX extracted ${text.length} chars`);
+        return text;
+      }
+    }
+  } catch (e) {
+    console.warn(`Extraction error for ${filePath}:`, e.message);
+  }
+
+  // 3. PDF Parsing (default / fallback)
   return new Promise((resolve) => {
     // pdf-parse v2 ships a CLI at pdf-parse/bin/cli.mjs
     const cliBin = path.join(
@@ -57,8 +81,8 @@ const applyToJob = async (req, res) => {
       return res.status(400).json({ message: 'Please upload a resume' });
     }
 
-    // Extract text from the uploaded PDF
-    const resumeText = await extractTextFromPDF(req.file.path);
+    // Extract text from the uploaded file
+    const resumeText = await extractTextFromFile(req.file.path);
 
     // Fetch the job to get the description for AI scoring
     const job = await Job.findById(jobId);

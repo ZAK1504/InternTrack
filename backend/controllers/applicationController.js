@@ -1,5 +1,6 @@
 const Application = require('../models/Application');
 const Job = require('../models/Job');
+const User = require('../models/User');
 const fs = require('fs');
 const path = require('path');
 const { execFile } = require('child_process');
@@ -179,10 +180,17 @@ const updateApplicationStatus = async (req, res) => {
     application.status = status;
     await application.save();
 
+    // Save notification to student's DB record
+    const message = `Your application for ${application.job.title} was ${status}`;
+    await User.findByIdAndUpdate(application.student, {
+      $push: { notifications: { message, read: false } }
+    });
+
     // Step 5: WebSockets - Emit event to student's room
     req.io.to(application.student.toString()).emit('application:statusUpdated', {
       jobTitle: application.job.title,
-      newStatus: status
+      newStatus: status,
+      message
     });
 
     res.json(application);
